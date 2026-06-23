@@ -43,10 +43,6 @@ export CASACORE_DATA=$PWD/casacore_data
 ## setup shell variables
 
 ```sh
-export CFLAGS="-I$(python -c "import numpy; print(numpy.get_include())")"
-python_version=$(python -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
-python_version_long=$(python -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}')")
-export CPLUS_INCLUDE_PATH="${CPLUS_INCLUDE_PATH:+CPLUS_INCLUDE_PATH:}$HOME/.local/share/uv/python/cpython-${python_version_long}-linux-x86_64-gnu/include/python${python_version}"
 export CPLUS_INCLUDE_PATH="$VIRTUAL_ENV/include:$CPLUS_INCLUDE_PATH"
 
 mkdir -p sources
