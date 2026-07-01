@@ -5,7 +5,7 @@
 ### on Adastra
 
 ```sh
-module load gsl
+module load gsl cmake
 export CC=gcc
 export CXX=g++
 ```
@@ -21,6 +21,7 @@ if test -z "${VIRTUAL_ENV:-}"; then
     fi
     # load venv
     source venv/bin/activate
+    uv pip install numpy==1.26.4 # for boost 1.74.0
 fi
 
 test -n "$VIRTUAL_ENV" || ( echo "ERROR: load the venv first"; exit 1)
@@ -43,6 +44,10 @@ export CASACORE_DATA=$PWD/casacore_data
 ## setup shell variables
 
 ```sh
+export CFLAGS="-I$(python -c "import numpy; print(numpy.get_include())")"
+python_version=$(python -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
+python_version_long=$(python -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}')")
+export CPLUS_INCLUDE_PATH="${CPLUS_INCLUDE_PATH:+CPLUS_INCLUDE_PATH:}$HOME/.local/share/uv/python/cpython-${python_version_long}-linux-x86_64-gnu/include/python${python_version}"
 export CPLUS_INCLUDE_PATH="$VIRTUAL_ENV/include:$CPLUS_INCLUDE_PATH"
 
 mkdir -p sources
@@ -57,7 +62,9 @@ cd sources
  if ! test -d boost_1_74_0; then
  tar -zxvf boost_1_74_0.tar.gz 
  ( cd boost_1_74_0
-   patch -p1 -i patches/boost-with-python-3.10.patch
+   patch -p1 -i ../../patches/boost-with-python-3.10.patch
+   patch -p1 -i ../../patches/boost-1.73-py310.txt
+   patch -p1 -i ../../patches/python_jam.patch
  )
  fi
  cd boost_1_74_0/
@@ -130,9 +137,9 @@ cd sources
  git clone https://github.com/casacore/casacore.git || true
  cd casacore/
  git checkout v3.7.1
- patch -p1 -i patches/fix-datatype-constexpr.patch || true
+ patch -p1 -i ../../patches/fix-datatype-constexpr.patch || true
  cmake -S casacore -B casacore-build -DCMAKE_INSTALL_PREFIX=$VIRTUAL_ENV -DBUILD_PYTHON=OFF -DBUILD_PYTHON3=ON -DBUILD_TESTING=OFF -DDATA_DIR=$CASACORE_DATA -DBOOST_ROOT=$VIRTUAL_ENV -Dboost_python310_DIR=$VIRTUAL_ENV -DCMAKE_VERBOSE_MAKEFILE=ON
- cmake --build -j $(nproc) casacore-build
+ cmake --build casacore-build -j$(nproc)
  cmake --install casacore-build
  )
 ```
@@ -141,6 +148,6 @@ cd sources
 
 ```sh
 cmake -S LOFAR -B build/gnu_opt  -DUSE_LOG4CPLUS=OFF -DBUILD_TESTING=OFF  -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_MODULE_PATH:PATH=$PWD/LOFAR/CMake -DCASACORE_ROOT_DIR=$VIRTUAL_ENV -DCMAKE_INSTALL_PREFIX=$VIRTUAL_ENV
-cmake --build build/gnu_opt -j
+cmake --build build/gnu_opt -j$(nproc)
 cmake --install build/gnu_opt
 ```
